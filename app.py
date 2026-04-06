@@ -28,6 +28,14 @@ def init_db():
                    job_role text,
                    salary text,
                    location text)""")
+    
+    cursor.execute("""
+    create table if not exists applications(
+    application_id text PRIMARY KEY,
+    student_id text,
+    job_id text,
+    status text)""")
+  
     conn.commit()
     conn.close()
     
@@ -198,10 +206,25 @@ def job_post():
 
     return render_template("jobposting.html")
 
-@app.route("/job/apply")
+@app.route("/job/apply", methods=["GET","POST"])
 def job_apply():
-    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db",timeout=10)
     cursor = conn.cursor()
+
+    if request.method=="POST":
+        application_id=request.form.get("application_id")
+        student_id=request.form.get("student_id")
+        job_id=request.form.get("job_id")
+
+        cursor.execute(
+            "INSERT INTO applications VALUES(?,?,?,?)", 
+            (application_id,student_id,job_id,"Pending")
+        )
+        conn.commit()
+        conn.close()
+
+        return "Application submitted successfully"
 
     cursor.execute("SELECT * FROM jobs")
     jobs = cursor.fetchall()
@@ -212,7 +235,15 @@ def job_apply():
 
 @app.route("/apply/status")
 def apply_status():
-    return render_template("jobstatus.html")
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db", timeout=10)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM applications")
+    applications = cursor.fetchall()
+
+    conn.close()
+
+    return render_template("jobstatus.html", applications=applications)
 
 @app.route("/about")
 def about():

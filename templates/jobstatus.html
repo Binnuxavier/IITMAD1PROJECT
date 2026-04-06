@@ -1,4 +1,19 @@
 <!DOCTYPE html>
 <html>
-    <h1>Job Status</h1>
+<head>
+    <title>Application Status</title>
+</head>
+<body>
+
+<h1>Application Status</h1>
+
+{% for app in applications %}
+    <p>Application ID: {{ app[0] }}</p>
+    <p>Student ID: {{ app[1] }}</p>
+    <p>Job ID: {{ app[2] }}</p>
+    <p>Status: {{ app[3] }}</p>
+    <hr>
+{% endfor %}
+
+</body>
 </html>

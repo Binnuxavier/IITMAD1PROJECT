@@ -1,4 +1,35 @@
 <!DOCTYPE html>
 <html>
-    <h1>Job apply</h1>
+<head>
+    <title>Jobs</title>
+</head>
+<body>
+
+<h1>Available Jobs</h1>
+
+{% for job in jobs %}
+    <p>Job ID: {{ job[0] }}</p>
+    <p>Company ID: {{ job[1] }}</p>
+    <p>Role: {{ job[2] }}</p>
+    <p>Salary: {{ job[3] }}</p>
+    <p>Location: {{ job[4] }}</p>
+    <hr>
+{% endfor %}
+
+<h2>Apply for a Job</h2>
+
+<form method="POST">
+    <label>Application ID</label>
+    <input name="application_id"><br>
+
+    <label>Student ID</label>
+    <input name="student_id"><br>
+
+    <label>Job ID</label>
+    <input name="job_id"><br>
+
+    <button type="submit">Apply</button>
+</form>
+
+</body>
 </html>
