@@ -11,17 +11,19 @@
     {% endif %}
 
     <form method="POST">
-        <label>Company ID</label>
-        <input type="text" name="company_id" required><br><br>
-
         <label>Company Name</label>
-        <input type="text" name="company_name" required><br><br>
+        <input type="text" name="company_name" value="{{ company_name or '' }}" required><br><br>
 
         <label>Mobile Number</label>
-        <input type="text" name="mobile_number" required><br><br>
+        <input type="text"
+               name="mobile_number"
+               value="{{ mobile_number or '' }}"
+               maxlength="10"
+               required
+               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,10)"><br><br>
 
         <label>Email ID</label>
-        <input type="text" name="email_id" required><br><br>
+        <input type="text" name="email_id" value="{{ email_id or '' }}" required><br><br>
 
         <label>Password</label>
         <input type="password" name="password" required><br><br>

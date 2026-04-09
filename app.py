@@ -1,10 +1,12 @@
-from flask import Flask, render_template,request,redirect
+from flask import Flask, render_template,request,redirect,session
 import sqlite3
 import uuid
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import date
 
 app=Flask(__name__)
+app.secret_key = "mysecretkey"
 
 def init_db():
     conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db") 
@@ -31,7 +33,8 @@ def init_db():
                    company_id text,
                    job_role text,
                    salary text,
-                   location text)""")
+                   location text,
+                   expiry_date date)""")
     
     cursor.execute("""
     create table if not exists applications(
@@ -247,22 +250,16 @@ def student_login():
         conn.close()
 
         if student and check_password_hash(student[5], password):
-            return render_template(
-                "studentdashboard.html",
-                student_id=student[0],
-                student_name=student[1],
-                program_name=student[2],
-                mobile_number=student[3],
-                email_id=student[4]
-            )
+            return render_template("studentdashboard.html",
+                                   student_id=student[0],
+                                   student_name=student[1],
+                                   program_name=student[2],
+                                   mobile_number=student[3],
+                                   email_id=student[4])
         else:
             return "Invalid Login"
 
     return render_template("studentlogin.html")
-
-@app.route("/student/dashboard")
-def student_dashboard():
-    return render_template("studentdashboard.html")
 
 @app.route("/company/login", methods=["GET", "POST"])
 def company_login():
@@ -281,15 +278,14 @@ def company_login():
         conn.close()
 
         if company and check_password_hash(company[4], password):
-            return render_template(
-                "companydashboard.html",
-                company_id=company[0],
-                company_name=company[1],
-                mobile_number=company[2],
-                email_id=company[3]
-            )
+            session["company_id"] = company[0]
+            return render_template("companydashboard.html",
+                                   company_id=company[0],
+                                   company_name=company[1],
+                                   mobile_number=company[2],
+                                   email_id=company[3])
         else:
-            return "Invalid Login"
+            return "Invalid Login or Company Not Approved"
 
     return render_template("companylogin.html")
 
@@ -364,40 +360,52 @@ def admin_login():
             return "Invalid Admin Login"
 
     return render_template("adminlogin.html")
-
-@app.route("/job/post", methods=["GET","POST"])
+@app.route("/job/post", methods=["GET", "POST"])
 def job_post():
     if request.method == "POST":
-        job_id = request.form.get("job_id")
-        company_id = request.form.get("company_id")
+        company_id = session.get("company_id")
+        if not company_id:
+            return "Please login first"
+
         job_role = request.form.get("job_role")
         salary = request.form.get("salary")
         location = request.form.get("location")
+        expiry_date = request.form.get("expiry_date")
+
+        # Prevent past date from backend too
+        if expiry_date < str(date.today()):
+            return "Expiry date cannot be in the past"
 
         conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
         cursor = conn.cursor()
 
+        # AUTO GENERATE JOB ID
+        cursor.execute("SELECT COUNT(*) FROM jobs")
+        count = cursor.fetchone()[0]
+        job_id = "J" + str(101 + count)
+
         cursor.execute(
-            "INSERT INTO jobs VALUES(?,?,?,?,?)",
-            (job_id, company_id, job_role, salary, location)
+            "INSERT INTO jobs VALUES(?,?,?,?,?,?)",
+            (job_id, company_id, job_role, salary, location, expiry_date)
         )
+
         conn.commit()
         conn.close()
 
-        return "Job Posted Successfully"
+        return "Job Posted Successfully. Job ID: " + job_id
 
-    return render_template("jobposting.html")
+    return render_template("jobposting.html", today=str(date.today()))
 
-@app.route("/job/apply", methods=["GET","POST"])
+@app.route("/job/apply", methods=["GET", "POST"])
 def job_apply():
     conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
     cursor = conn.cursor()
 
     if request.method == "POST":
-        application_id = str(uuid.uuid4())[:8]
         student_id = request.form.get("student_id")
         job_id = request.form.get("job_id")
 
+        # CHECK IF ALREADY APPLIED
         cursor.execute(
             "SELECT * FROM applications WHERE student_id=? AND job_id=?",
             (student_id, job_id)
@@ -408,6 +416,19 @@ def job_apply():
             conn.close()
             return "Already applied for this job"
 
+        # CHECK IF JOB IS EXPIRED
+        cursor.execute("SELECT expiry_date FROM jobs WHERE job_id=?", (job_id,))
+        job = cursor.fetchone()
+
+        if job and job[0] < str(date.today()):
+            conn.close()
+            return "This job has expired"
+
+        # AUTO GENERATE APPLICATION ID
+        cursor.execute("SELECT COUNT(*) FROM applications")
+        count = cursor.fetchone()[0]
+        application_id = "A" + str(101 + count)
+
         cursor.execute(
             "INSERT INTO applications VALUES(?,?,?,?)",
             (application_id, student_id, job_id, "Pending")
@@ -416,14 +437,73 @@ def job_apply():
         conn.commit()
         conn.close()
 
-        return "Application submitted successfully"
+        return "Application submitted successfully. Application ID: " + application_id
 
-    cursor.execute("SELECT * FROM jobs")
+    # SHOW ONLY ACTIVE JOBS
+    cursor.execute("SELECT * FROM jobs WHERE expiry_date >= ?", (str(date.today()),))
     jobs = cursor.fetchall()
 
     conn.close()
 
     return render_template("jobapply.html", jobs=jobs)
+
+@app.route("/company/applications")
+def company_applications():
+    company_id = session.get("company_id")
+    if not company_id:
+        return "Please login first"
+
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT applications.application_id,
+               applications.student_id,
+               applications.job_id,
+               applications.status
+        FROM applications
+        JOIN jobs ON applications.job_id = jobs.job_id
+        WHERE jobs.company_id = ?
+    """, (company_id,))
+
+    applications = cursor.fetchall()
+    conn.close()
+
+    return render_template("companyapplications.html", applications=applications)
+@app.route("/company/application/update/<application_id>", methods=["POST"])
+def update_application_status(application_id):
+    company_id = session.get("company_id")
+    if not company_id:
+        return "Please login first"
+
+    new_status = request.form.get("status")
+
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+    cursor = conn.cursor()
+
+    # Make sure application belongs to this company's job
+    cursor.execute("""
+        SELECT applications.application_id
+        FROM applications
+        JOIN jobs ON applications.job_id = jobs.job_id
+        WHERE applications.application_id = ? AND jobs.company_id = ?
+    """, (application_id, company_id))
+
+    valid_application = cursor.fetchone()
+
+    if not valid_application:
+        conn.close()
+        return "Unauthorized action"
+
+    cursor.execute(
+        "UPDATE applications SET status=? WHERE application_id=?",
+        (new_status, application_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/company/applications")
 
 @app.route("/apply/status")
 def apply_status():

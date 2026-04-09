@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Company Applications</title>
+</head>
+<body>
+    <h1>Applications Received</h1>
+
+    <table border="1" cellpadding="10">
+        <tr>
+            <th>Application ID</th>
+            <th>Student ID</th>
+            <th>Job ID</th>
+            <th>Status</th>
+            <th>Update Status</th>
+        </tr>
+
+        {% for app in applications %}
+        <tr>
+            <td>{{ app[0] }}</td>
+            <td>{{ app[1] }}</td>
+            <td>{{ app[2] }}</td>
+            <td>{{ app[3] }}</td>
+            <td>
+                <form method="POST" action="/company/application/update/{{ app[0] }}">
+                    <select name="status">
+                        <option value="Pending">Pending</option>
+                        <option value="Shortlisted">Shortlisted</option>
+                        <option value="Selected">Selected</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                    <button type="submit">Update</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
