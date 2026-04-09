@@ -1,17 +1,32 @@
 <!DOCTYPE html>
 <html>
-    <h1>Company registration</h1>
+<head>
+    <title>Company Registration</title>
+</head>
+<body>
+    <h1>Company Registration</h1>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
     <form method="POST">
         <label>Company ID</label>
-        <input name="company_id"><br>
+        <input type="text" name="company_id" required><br><br>
+
         <label>Company Name</label>
-        <input name="company_name"><br>
+        <input type="text" name="company_name" required><br><br>
+
         <label>Mobile Number</label>
-        <input name ="mobile_number"><br>
+        <input type="text" name="mobile_number" required><br><br>
+
         <label>Email ID</label>
-        <input name="email_id"><br>
+        <input type="text" name="email_id" required><br><br>
+
         <label>Password</label>
-        <input type = "password", name="password"><br>
-        <button>Submit</button>
+        <input type="password" name="password" required><br><br>
+
+        <button type="submit">Submit</button>
     </form>
+</body>
 </html>

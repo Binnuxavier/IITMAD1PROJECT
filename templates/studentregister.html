@@ -1,19 +1,40 @@
 <!DOCTYPE html>
 <html>
-    <h1>Student registration</h1>
-    <form method = "POST">
+<head>
+    <title>Student Registration</title>
+</head>
+<body>
+    <h1>Student Registration</h1>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST">
         <label>Student ID</label>
-        <input name = "student_id"> <br>
+        <input type="text" name="student_id" value="{{ student_id or '' }}" required><br><br>
+
         <label>Student Name</label>
-        <input name ="student_name"> <br>
+        <input type="text" name="student_name" value="{{ student_name or '' }}" required><br><br>
+
         <label>Program Name</label>
-        <input name ="program_name"> <br>
-        <label>Mobile numer</label>
-        <input name ="mobile_number"> <br>
+        <input type="text" name="program_name" value="{{ program_name or '' }}" required><br><br>
+
+        <label>Mobile Number</label>
+        <input type="text"
+               name="mobile_number"
+               value="{{ mobile_number or '' }}"
+               maxlength="10"
+               required
+               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,10)"><br><br>
+
         <label>Email ID</label>
-        <input name ="email_id"> <br>
+        <input type="text" name="email_id" value="{{ email_id or '' }}" required><br><br>
+
         <label>Password</label>
-        <input type ="password", name ="password"><br>
-        <button> submit </button>
+        <input type="password" name="password" required><br><br>
+
+        <button type="submit">Submit</button>
     </form>
+</body>
 </html>

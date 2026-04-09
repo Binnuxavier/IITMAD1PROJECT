@@ -1,4 +1,48 @@
 <!DOCTYPE html>
 <html>
-    <h1>Admin Dashbaord</h1>
+<head>
+    <title>Admin Dashboard</title>
+</head>
+<body>
+
+    <h1>Admin Dashboard</h1>
+
+    <h2>Students</h2>
+    {% for s in students %}
+        <p>{{ s }}</p>
+    {% endfor %}
+
+    <hr>
+
+    <h2>Companies</h2>
+    {% for c in companies %}
+        <p>
+            Company ID: {{ c[0] }} |
+            Name: {{ c[1] }} |
+            Email: {{ c[3] }} |
+            Status: {{ c[5] }}
+
+            <a href="/admin/company/approve/{{ c[0] }}">Approve</a>
+            <a href="/admin/company/reject/{{ c[0] }}">Reject</a>
+        </p>
+    {% endfor %}
+
+    <hr>
+
+    <h2>Jobs</h2>
+    {% for j in jobs %}
+        <p>{{ j }}</p>
+    {% endfor %}
+
+    <hr>
+
+    <h2>Applications</h2>
+    {% for a in applications %}
+        <p>{{ a }}</p>
+    {% endfor %}
+
+    <br>
+    <a href="/">Go to Home</a>
+
+</body>
 </html>

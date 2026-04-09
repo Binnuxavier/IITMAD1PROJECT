@@ -1,5 +1,9 @@
-from flask import Flask, render_template,request
+from flask import Flask, render_template,request,redirect
 import sqlite3
+import uuid
+import re
+from werkzeug.security import generate_password_hash, check_password_hash
+
 app=Flask(__name__)
 
 def init_db():
@@ -47,97 +51,212 @@ def home():
 def login():
     return render_template("login.html")
 
-@app.route("/student/register", methods =["GET","POST"])
+@app.route("/student/register", methods=["GET", "POST"])
 def student_register():
     if request.method == "POST":
-        student_id= request.form.get("student_id")
-        student_name=request.form.get("student_name")
-        program_name=request.form.get("program_name")
-        mobile_number=request.form.get("mobile_number")
-        email_id=request.form.get("email_id")       
-        password=request.form.get("password")
+        student_id = request.form.get("student_id")
+        student_name = request.form.get("student_name")
+        program_name = request.form.get("program_name")
+        mobile_number = request.form.get("mobile_number")
+        email_id = request.form.get("email_id")
+        password = request.form.get("password")
 
-        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db") 
-        cursor =conn.cursor()
+        # VALIDATIONS
+        if not mobile_number.isdigit() or len(mobile_number) != 10:
+            return render_template("studentregister.html",
+                                   error="Mobile number must be exactly 10 digits",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if "@" not in email_id:
+            return render_template("studentregister.html",
+                                   error="Enter a valid email address",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if len(password) < 6:
+            return render_template("studentregister.html",
+                                   error="Password must be at least 6 characters",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[A-Z]", password):
+            return render_template("studentregister.html",
+                                   error="Password must contain at least one uppercase letter",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[a-z]", password):
+            return render_template("studentregister.html",
+                                   error="Password must contain at least one lowercase letter",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[0-9]", password):
+            return render_template("studentregister.html",
+                                   error="Password must contain at least one number",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[@#$%^&+=!]", password):
+            return render_template("studentregister.html",
+                                   error="Password must contain at least one special character",
+                                   student_id=student_id,
+                                   student_name=student_name,
+                                   program_name=program_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        # HASH PASSWORD
+        hashed_password = generate_password_hash(password)
+
+        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+        cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO students VALUES(?,?,?,?,?,?)",
-            (student_id,student_name,program_name,mobile_number,email_id,password)
+            (student_id, student_name, program_name, mobile_number, email_id, hashed_password)
         )
         conn.commit()
         conn.close()
-        print(student_id)
-        print(student_name)
-        print(program_name)
-        print(mobile_number)
-        print(email_id)
-        
+
         return render_template("studentdashboard.html",
                                student_id=student_id,
                                student_name=student_name,
                                program_name=program_name,
                                mobile_number=mobile_number,
                                email_id=email_id)
-    
+
     return render_template("studentregister.html")
 
-@app.route("/company/register",methods=["GET","POST"])
+@app.route("/company/register", methods=["GET", "POST"])
 def company_register():
-    if request.method=="POST":
-        company_id=request.form.get("company_id")
-        company_name=request.form.get("company_name")
-        mobile_number=request.form.get("mobile_number")
-        email_id=request.form.get("email_id")
-        password=request.form.get("password")
-        print(company_id)
-        print(company_name)
-        print(mobile_number)
-        print(email_id)
+    if request.method == "POST":
+        company_name = request.form.get("company_name")
+        mobile_number = request.form.get("mobile_number")
+        email_id = request.form.get("email_id")
+        password = request.form.get("password")
 
-        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db") 
-        cursor =conn.cursor()
+        # VALIDATIONS
+        if not mobile_number.isdigit() or len(mobile_number) != 10:
+            return render_template("companyregister.html",
+                                   error="Mobile number must be exactly 10 digits",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if "@" not in email_id:
+            return render_template("companyregister.html",
+                                   error="Enter a valid email address",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if len(password) < 6:
+            return render_template("companyregister.html",
+                                   error="Password must be at least 6 characters",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[A-Z]", password):
+            return render_template("companyregister.html",
+                                   error="Password must contain at least one uppercase letter",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[a-z]", password):
+            return render_template("companyregister.html",
+                                   error="Password must contain at least one lowercase letter",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[0-9]", password):
+            return render_template("companyregister.html",
+                                   error="Password must contain at least one number",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        if not re.search("[@#$%^&+=!]", password):
+            return render_template("companyregister.html",
+                                   error="Password must contain at least one special character",
+                                   company_name=company_name,
+                                   mobile_number=mobile_number,
+                                   email_id=email_id)
+
+        # HASH PASSWORD
+        hashed_password = generate_password_hash(password)
+
+        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+        cursor = conn.cursor()
+
+        # AUTO GENERATE COMPANY ID
+        cursor.execute("SELECT COUNT(*) FROM company")
+        count = cursor.fetchone()[0]
+        company_id = "C" + str(101 + count)
+
         cursor.execute(
             "INSERT INTO company VALUES(?,?,?,?,?,?)",
-            (company_id,company_name,mobile_number,email_id,password,"Pending")
+            (company_id, company_name, mobile_number, email_id, hashed_password, "Pending")
         )
         conn.commit()
         conn.close()
+
         return render_template("companydashboard.html",
                                company_id=company_id,
                                company_name=company_name,
                                mobile_number=mobile_number,
                                email_id=email_id)
 
-
     return render_template("companyregister.html")
 
-@app.route("/student/login" , methods=["GET","POST"])
+@app.route("/student/login", methods=["GET", "POST"])
 def student_login():
-
-    if request.method== "POST":
+    if request.method == "POST":
         student_id = request.form.get("student_id")
         password = request.form.get("password")
 
-        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db") 
-        cursor =conn.cursor()
+        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+        cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT * FROM students WHERE student_id=? AND password=?", 
-            (student_id,password))
+            "SELECT * FROM students WHERE student_id=?",
+            (student_id,)
+        )
         student = cursor.fetchone()
-
         conn.close()
 
-        if student:
-            return render_template ("studentdashboard.html",
-                                    student_id=student[0],
-                                    student_name=student[1],
-                                    program_name=student[2],
-                                    mobile_number=student[3],
-                                    email_id=student[3])
+        if student and check_password_hash(student[5], password):
+            return render_template(
+                "studentdashboard.html",
+                student_id=student[0],
+                student_name=student[1],
+                program_name=student[2],
+                mobile_number=student[3],
+                email_id=student[4]
+            )
         else:
-            return "Invaild Login"
-       
-        return render_template ("studentdashboard.html")
+            return "Invalid Login"
 
     return render_template("studentlogin.html")
 
@@ -145,43 +264,106 @@ def student_login():
 def student_dashboard():
     return render_template("studentdashboard.html")
 
-@app.route("/company/login" , methods=["GET","POST"])
+@app.route("/company/login", methods=["GET", "POST"])
 def company_login():
-
-    if request.method== "POST":
+    if request.method == "POST":
         company_id = request.form.get("company_id")
         password = request.form.get("password")
 
-        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db") 
-        cursor =conn.cursor()
+        conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+        cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT * FROM company WHERE company_id=? AND password=?", 
-            (company_id,password))
-        
+            "SELECT * FROM company WHERE company_id=? AND approval_status=?",
+            (company_id, "Approved")
+        )
         company = cursor.fetchone()
-        
         conn.close()
 
-        if company:
-            return render_template ("companydashboard.html",
-                                    company_id=company[0],
-                                    company_name=company[1],
-                                    mobile_number=company[2],
-                                    email_id=company[3])
+        if company and check_password_hash(company[4], password):
+            return render_template(
+                "companydashboard.html",
+                company_id=company[0],
+                company_name=company[1],
+                mobile_number=company[2],
+                email_id=company[3]
+            )
         else:
-            return "Invaild Login"
-        
-        return render_template ("companydashboard.html")
+            return "Invalid Login"
 
     return render_template("companylogin.html")
+
 @app.route("/company/dashboard")
 def company_dashboard():
     return render_template("companydashboard.html")
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
-    return render_template("admindashboard.html")
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM students")
+    students = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM company")
+    companies = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM jobs")
+    jobs = cursor.fetchall()
+
+    cursor.execute("SELECT * FROM applications")
+    applications = cursor.fetchall()
+
+    conn.close()
+
+    return render_template("admindashboard.html",
+                           students=students,
+                           companies=companies,
+                           jobs=jobs,
+                           applications=applications)
+@app.route("/admin/company/approve/<company_id>")
+def approve_company(company_id):
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE company SET approval_status=? WHERE company_id=?",
+        ("Approved", company_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+
+
+@app.route("/admin/company/reject/<company_id>")
+def reject_company(company_id):
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE company SET approval_status=? WHERE company_id=?",
+        ("Rejected", company_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        if username == "admin" and password == "123":
+            return redirect("/admin/dashboard")
+        else:
+            return "Invalid Admin Login"
+
+    return render_template("adminlogin.html")
 
 @app.route("/job/post", methods=["GET","POST"])
 def job_post():
@@ -208,19 +390,29 @@ def job_post():
 
 @app.route("/job/apply", methods=["GET","POST"])
 def job_apply():
-
-    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db",timeout=10)
+    conn = sqlite3.connect(r"C:\Users\binnu\OneDrive\Desktop\iit_project\placement.db")
     cursor = conn.cursor()
 
-    if request.method=="POST":
-        application_id=request.form.get("application_id")
-        student_id=request.form.get("student_id")
-        job_id=request.form.get("job_id")
+    if request.method == "POST":
+        application_id = str(uuid.uuid4())[:8]
+        student_id = request.form.get("student_id")
+        job_id = request.form.get("job_id")
 
         cursor.execute(
-            "INSERT INTO applications VALUES(?,?,?,?)", 
-            (application_id,student_id,job_id,"Pending")
+            "SELECT * FROM applications WHERE student_id=? AND job_id=?",
+            (student_id, job_id)
         )
+        existing = cursor.fetchone()
+
+        if existing:
+            conn.close()
+            return "Already applied for this job"
+
+        cursor.execute(
+            "INSERT INTO applications VALUES(?,?,?,?)",
+            (application_id, student_id, job_id, "Pending")
+        )
+
         conn.commit()
         conn.close()
 
