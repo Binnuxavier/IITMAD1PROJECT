@@ -14,16 +14,21 @@
             <th>Application ID</th>
             <th>Student ID</th>
             <th>Job ID</th>
+            <th>Date</th>
+            <th>Program</th>
+            <th>CGPA</th>
             <th>Status</th>
-            <th>Update</th>
         </tr>
 
         {% for app in applications %}
         <tr>
-            <td>{{ app[0] }}</td>
-            <td>{{ app[1] }}</td>
-            <td>{{ app[2] }}</td>
-            <td>{{ app[3] }}</td>
+    <td>{{ app[0] }}</td>  <!-- App ID -->
+    <td>{{ app[1] }}</td>  <!-- Student ID -->
+    <td>{{ app[2] }}</td>  <!-- Job ID -->
+    <td>{{ app[3] }}</td>  <!-- Date -->
+    <td>{{ app[4] }}</td>  <!-- Program -->
+    <td>{{ app[5] }}</td>  <!-- CGPA -->
+    <td>{{ app[6] }}</td>  <!-- Status -->
             <td>
                 <form method="POST" action="/company/application/update/{{ app[0] }}">
                     <select name="status" class="form-select mb-1">

@@ -10,19 +10,33 @@
     <h2 class="text-danger mb-4">My Application Status</h2>
 
     <table class="table table-bordered shadow bg-white">
-        <tr>
-            <th>Application ID</th>
-            <th>Job ID</th>
-            <th>Status</th>
-        </tr>
+        <thead>
+            <tr>
+                <th>Application ID</th>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Salary</th>
+                <th>Location</th>
+                <th>Applied Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
 
-        {% for app in applications %}
-        <tr>
-            <td>{{ app[0] }}</td>
-            <td>{{ app[2] }}</td>
-            <td>{{ app[3] }}</td>
-        </tr>
-        {% endfor %}
+        <tbody>
+            {% for app in applications %}
+            <tr>
+                <td>{{ app[0] }}</td> <!-- App ID -->
+                <td>{{ app[4] }}</td> <!-- Company -->
+                <td>{{ app[1] }}</td> <!-- Role -->
+                <td>{{ app[2] }}</td> <!-- Salary -->
+                <td>{{ app[3] }}</td> <!-- Location -->
+                <td>{{ app[5] }}</td> <!-- Date -->
+                <td>{{ app[6] }}</td> <!-- Status -->
+                    <span class="badge bg-success">{{ app[6] }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
     <a href="/student/dashboard" class="btn btn-secondary mt-3">Back</a>

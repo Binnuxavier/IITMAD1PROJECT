@@ -9,32 +9,42 @@
 <div class="container py-5">
     <h2 class="text-danger mb-4">Available Jobs</h2>
 
-    <table class="table table-bordered shadow bg-white">
-        <tr>
-            <th>Job ID</th>
-            <th>Role</th>
-            <th>Salary</th>
-            <th>Location</th>
-            <th>Expiry Date</th>
-            <th>Action</th>
-        </tr>
+    <table class="table">
+    <tr>
+        <th>Job ID</th>
+        <th>Company</th>
+        <th>Role</th>
+        <th>Salary</th>
+        <th>Location</th>
+        <th>Expiry</th>
+        <th>Description</th>
+        <th>Eligibility</th>
+        <th>Action</th>
+    </tr>
 
-        {% for job in jobs %}
-        <tr>
-            <td>{{ job[0] }}</td>
-            <td>{{ job[2] }}</td>
-            <td>{{ job[3] }}</td>
-            <td>{{ job[4] }}</td>
-            <td>{{ job[5] }}</td>
-            <td>
-                <form method="POST">
-                    <input type="hidden" name="job_id" value="{{ job[0] }}">
-                    <button type="submit" class="btn btn-danger btn-sm">Apply</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% for j in jobs %}   <!-- ✅ LOOP START -->
+    <tr>
+        <td>{{ j[0] }}</td>
+        <td>{{ j[9] }}</td>
+        <td>{{ j[2] }}</td>
+        <td>{{ j[3] }}</td>
+        <td>{{ j[4] }}</td>
+        <td>{{ j[5] }}</td>
+        <td>{{ j[6] }}</td>
+        <td>{{ j[7] }}</td>
+
+        <td>
+            <form method="POST">
+                <input type="hidden" name="job_id" value="{{ j[0] }}">
+                <input type="text" name="cgpa" class="form-control mb-2"
+                    placeholder="Enter your CGPA" required>
+                <button class="btn btn-danger">Apply</button>
+</form>
+        </td>
+    </tr>
+    {% endfor %}   <!-- ✅ LOOP END -->
+
+</table>
 
     <a href="/student/dashboard" class="btn btn-secondary mt-3">Back</a>
 </div>

@@ -4,14 +4,28 @@
     <title>Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-light">
 
 <div class="container py-5">
+
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-danger">Admin Dashboard</h2>
         <a href="/admin/logout" class="btn btn-secondary">Logout</a>
     </div>
 
+    <!-- SEARCH BAR -->
+    <form method="GET" action="/admin/dashboard" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search student or company..."
+                   value="{{ request.args.get('search','') }}">
+            <button class="btn btn-danger">Search</button>
+        </div>
+    </form>
+
+    <!-- SUMMARY CARDS -->
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="card shadow text-center p-3">
@@ -21,8 +35,8 @@
         </div>
         <div class="col-md-3">
             <div class="card shadow text-center p-3">
-                <h5>Companies</h5>
-                <h3 class="text-danger">{{ companies|length }}</h3>
+                <h5>Company</h5>
+                <h3 class="text-danger">{{ company|length }}</h3>
             </div>
         </div>
         <div class="col-md-3">
@@ -39,7 +53,8 @@
         </div>
     </div>
 
-    <h4 class="text-danger mt-5">Companies</h4>
+    <!-- COMPANY -->
+    <h4 class="text-danger mt-5">Company</h4>
     <table class="table table-bordered shadow bg-white">
         <tr>
             <th>Company ID</th>
@@ -48,7 +63,8 @@
             <th>Status</th>
             <th>Actions</th>
         </tr>
-        {% for c in companies %}
+
+        {% for c in company %}
         <tr>
             <td>{{ c[0] }}</td>
             <td>{{ c[1] }}</td>
@@ -56,12 +72,14 @@
             <td>{{ c[5] }}</td>
             <td>
                 <a href="/admin/company/approve/{{ c[0] }}" class="btn btn-success btn-sm">Approve</a>
-                <a href="/admin/company/reject/{{ c[0] }}" class="btn btn-danger btn-sm">Reject</a>
+                <a href="/admin/company/reject/{{ c[0] }}" class="btn btn-warning btn-sm">Reject</a>
+                <a href="/admin/company/delete/{{ c[0] }}" class="btn btn-danger btn-sm">Delete</a>
             </td>
         </tr>
         {% endfor %}
     </table>
 
+    <!-- STUDENTS -->
     <h4 class="text-danger mt-5">Students</h4>
     <table class="table table-bordered shadow bg-white">
         <tr>
@@ -69,17 +87,23 @@
             <th>Name</th>
             <th>Program</th>
             <th>Email</th>
+            <th>Action</th>
         </tr>
+
         {% for s in students %}
         <tr>
             <td>{{ s[0] }}</td>
             <td>{{ s[1] }}</td>
             <td>{{ s[2] }}</td>
             <td>{{ s[4] }}</td>
+            <td>
+                <a href="/admin/student/delete/{{ s[0] }}" class="btn btn-danger btn-sm">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </table>
 
+    <!-- JOBS -->
     <h4 class="text-danger mt-5">Jobs</h4>
     <table class="table table-bordered shadow bg-white">
         <tr>
@@ -89,7 +113,10 @@
             <th>Salary</th>
             <th>Location</th>
             <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Action</th>
         </tr>
+
         {% for j in jobs %}
         <tr>
             <td>{{ j[0] }}</td>
@@ -98,27 +125,50 @@
             <td>{{ j[3] }}</td>
             <td>{{ j[4] }}</td>
             <td>{{ j[5] }}</td>
+            <td>{{ j[8] }}</td>
+
+            <td>
+                {% if j[8] == "Pending" %}
+                    <a href="/admin/job/approve/{{ j[0] }}" class="btn btn-success btn-sm">Approve</a>
+                    <a href="/admin/job/reject/{{ j[0] }}" class="btn btn-danger btn-sm">Reject</a>
+                {% else %}
+                    <span class="text-muted">No action</span>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </table>
 
+    <!-- APPLICATIONS -->
     <h4 class="text-danger mt-5">Applications</h4>
     <table class="table table-bordered shadow bg-white">
-        <tr>
-            <th>Application ID</th>
-            <th>Student ID</th>
-            <th>Job ID</th>
-            <th>Status</th>
-        </tr>
-        {% for a in applications %}
-        <tr>
-            <td>{{ a[0] }}</td>
-            <td>{{ a[1] }}</td>
-            <td>{{ a[2] }}</td>
-            <td>{{ a[3] }}</td>
-        </tr>
-        {% endfor %}
+    <tr>
+        <th>Application ID</th>
+        <th>Student ID</th>
+        <th>Student Name</th>
+        <th>Job ID</th>
+        <th>Company Name</th>
+        <th>Date</th>
+        <th>Program</th>
+        <th>CGPA</th>
+        <th>Status</th>
+    </tr>
+
+    {% for a in applications %}
+    <tr>
+    <td>{{ a[0] }}</td>
+    <td>{{ a[1] }}</td>
+    <td>{{ a[2] }}</td>
+    <td>{{ a[3] }}</td>
+    <td>{{ a[4] }}</td>
+    <td>{{ a[5] }}</td>
+    <td>{{ a[6] }}</td>
+    <td>{{ a[7] }}</td>
+    <td>{{ a[8] }}</td>
+</tr>
+{% endfor %}
     </table>
+
 </div>
 
 </body>

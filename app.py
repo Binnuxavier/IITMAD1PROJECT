@@ -43,13 +43,16 @@ def init_db():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS jobs(
-            job_id TEXT PRIMARY KEY,
-            company_id TEXT,
-            job_role TEXT,
-            salary TEXT,
-            location TEXT,
-            expiry_date DATE
-        )
+        job_id TEXT PRIMARY KEY,
+        company_id TEXT,
+        job_role TEXT,
+        salary TEXT,
+        location TEXT,
+        expiry_date DATE,
+        description TEXT,
+        eligibility TEXT,
+        status TEXT
+    )
     """)
 
     cursor.execute("""
@@ -57,6 +60,9 @@ def init_db():
             application_id TEXT PRIMARY KEY,
             student_id TEXT,
             job_id TEXT,
+            application_date TEXT,
+            program TEXT,
+            cgpa TEXT,
             status TEXT
         )
     """)
@@ -65,7 +71,7 @@ def init_db():
     conn.close()
 
 
-# ---------------- HOME ----------------
+# HOME Page
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -76,7 +82,7 @@ def about():
     return render_template("about.html")
 
 
-# ---------------- STUDENT REGISTER ----------------
+# STUDENT registration
 @app.route("/student/register", methods=["GET", "POST"])
 def student_register():
     if request.method == "POST":
@@ -180,7 +186,7 @@ def student_register():
     return render_template("studentregister.html")
 
 
-# ---------------- STUDENT LOGIN ----------------
+# STUDENT login 
 @app.route("/student/login", methods=["GET", "POST"])
 def student_login():
     if request.method == "POST":
@@ -232,7 +238,7 @@ def student_logout():
     return redirect("/student/login")
 
 
-# ---------------- COMPANY REGISTER ----------------
+# COMPANY Registration
 @app.route("/company/register", methods=["GET", "POST"])
 def company_register():
     if request.method == "POST":
@@ -312,7 +318,7 @@ def company_register():
     return render_template("companyregister.html")
 
 
-# ---------------- COMPANY LOGIN ----------------
+# COMPANY Login
 @app.route("/company/login", methods=["GET", "POST"])
 def company_login():
     if request.method == "POST":
@@ -347,9 +353,15 @@ def company_dashboard():
 
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("SELECT * FROM company WHERE company_id=?", (company_id,))
     company = cursor.fetchone()
+
     conn.close()
+
+    if not company:
+        session.pop("company_id", None)
+        return redirect("/company/login")
 
     return render_template("companydashboard.html",
                            company_id=company[0],
@@ -364,7 +376,7 @@ def company_logout():
     return redirect("/company/login")
 
 
-# ---------------- ADMIN LOGIN ----------------
+# ADMIN Login
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -379,7 +391,6 @@ def admin_login():
 
     return render_template("adminlogin.html")
 
-
 @app.route("/admin/dashboard")
 def admin_dashboard():
     if "admin" not in session:
@@ -388,26 +399,56 @@ def admin_dashboard():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM students")
-    students = cursor.fetchall()
+    search = request.args.get("search")
 
-    cursor.execute("SELECT * FROM company")
-    companies = cursor.fetchall()
+    if search:
+        cursor.execute(
+            "SELECT * FROM students WHERE student_name LIKE ? OR student_id LIKE ?",
+            ('%' + search + '%', '%' + search + '%')
+        )
+        students = cursor.fetchall()
+
+        cursor.execute(
+            "SELECT * FROM company WHERE company_name LIKE ? OR company_id LIKE ?",
+            ('%' + search + '%', '%' + search + '%')
+        )
+        company = cursor.fetchall()
+    else:
+        cursor.execute("SELECT * FROM students")
+        students = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM company")
+        company = cursor.fetchall()
 
     cursor.execute("SELECT * FROM jobs")
     jobs = cursor.fetchall()
 
-    cursor.execute("SELECT * FROM applications")
+    cursor.execute("""
+    SELECT 
+    a.application_id,      -- 0
+    a.student_id,          -- 1
+    s.student_name,        -- 2
+    a.job_id,              -- 3
+    c.company_name,        -- 4
+    a.application_date,    -- 5
+    a.program,             -- 6
+    a.cgpa,                -- 7
+    a.status               -- 8
+    FROM applications a
+    JOIN students s ON a.student_id = s.student_id
+    JOIN jobs j ON a.job_id = j.job_id
+    JOIN company c ON j.company_id = c.company_id
+    """)
+
     applications = cursor.fetchall()
 
     conn.close()
 
     return render_template("admindashboard.html",
                            students=students,
-                           companies=companies,
+                           company=company,
                            jobs=jobs,
                            applications=applications)
-
 
 @app.route("/admin/company/approve/<company_id>")
 def approve_company(company_id):
@@ -445,7 +486,35 @@ def reject_company(company_id):
     conn.close()
 
     return redirect("/admin/dashboard")
+@app.route("/admin/job/reject/<job_id>")
+def reject_job(job_id):
+    conn = get_connection()
+    cursor = conn.cursor()
 
+    cursor.execute(
+        "UPDATE jobs SET status=? WHERE job_id=?",
+        ("Rejected", job_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+
+@app.route("/admin/company/delete/<company_id>")
+def delete_company(company_id):
+    if "admin" not in session:
+        return redirect("/admin/login")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM company WHERE company_id=?", (company_id,))
+    
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
 
 @app.route("/admin/logout")
 def admin_logout():
@@ -453,7 +522,7 @@ def admin_logout():
     return redirect("/admin/login")
 
 
-# ---------------- JOB POST ----------------
+# JOB Posting
 @app.route("/job/post", methods=["GET", "POST"])
 def job_post():
     if "company_id" not in session:
@@ -464,9 +533,11 @@ def job_post():
         job_role = request.form.get("job_role")
         salary = request.form.get("salary")
         location = request.form.get("location")
+        description = request.form["description"]
+        eligibility = request.form["eligibility"]
         expiry_date = request.form.get("expiry_date")
 
-        if expiry_date < str(date.today()):
+        if expiry_date and expiry_date < str(date.today()):
             return render_template("jobposting.html",
                                    today=str(date.today()),
                                    error="Expiry date cannot be in the past")
@@ -479,9 +550,16 @@ def job_post():
         job_id = "J" + str(101 + count)
 
         cursor.execute(
-            "INSERT INTO jobs VALUES(?,?,?,?,?,?)",
-            (job_id, company_id, job_role, salary, location, expiry_date)
-        )
+    "INSERT INTO jobs VALUES(?,?,?,?,?,?,?,?,?)",
+        (job_id,
+        company_id,
+        job_role,
+        salary,
+        location,
+        expiry_date,
+        description,
+        eligibility,
+        "Pending"))
 
         conn.commit()
         conn.close()
@@ -491,7 +569,6 @@ def job_post():
     return render_template("jobposting.html", today=str(date.today()))
 
 
-# ---------------- JOB APPLY ----------------
 @app.route("/job/apply", methods=["GET", "POST"])
 def job_apply():
     if "student_id" not in session:
@@ -515,6 +592,7 @@ def job_apply():
             conn.close()
             return "Already applied for this job"
 
+
         cursor.execute("SELECT expiry_date FROM jobs WHERE job_id=?", (job_id,))
         job = cursor.fetchone()
 
@@ -527,24 +605,69 @@ def job_apply():
         application_id = "A" + str(101 + count)
 
         cursor.execute(
-            "INSERT INTO applications VALUES(?,?,?,?)",
-            (application_id, student_id, job_id, "Pending")
+            "SELECT program_name FROM students WHERE student_id=?",
+            (student_id,)
+        )
+        student = cursor.fetchone()
+
+        if not student:
+            conn.close()
+            return f"Student not found for ID {student_id}"
+
+        program = student[0]
+
+        cgpa = request.form.get("cgpa")
+        application_date = str(date.today())
+
+        cursor.execute(
+            "INSERT INTO applications VALUES(?,?,?,?,?,?,?)",
+            (
+                application_id,
+                student_id,
+                job_id,
+                application_date,
+                program,
+                cgpa,
+                "Pending"
+            )
         )
 
         conn.commit()
         conn.close()
 
         return redirect("/apply/status")
+    
+    cursor.execute("""
+        SELECT jobs.*, company.company_name
+        FROM jobs
+        JOIN company ON jobs.company_id = company.company_id
+        WHERE jobs.status='Approved'
+    """)
 
-    cursor.execute("SELECT * FROM jobs WHERE expiry_date >= ?", (str(date.today()),))
     jobs = cursor.fetchall()
-
     conn.close()
 
     return render_template("jobapply.html", jobs=jobs)
 
+@app.route("/admin/job/approve/<job_id>")
+def approve_job(job_id):
+    if "admin" not in session:
+        return redirect("/admin/login")
 
-# ---------------- COMPANY APPLICATIONS ----------------
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE jobs SET status=? WHERE job_id=?",
+        ("Approved", job_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
+
+# COMPANY Applications
 @app.route("/company/applications")
 def company_applications():
     if "company_id" not in session:
@@ -556,14 +679,19 @@ def company_applications():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT applications.application_id,
-               applications.student_id,
-               applications.job_id,
-               applications.status
-        FROM applications
-        JOIN jobs ON applications.job_id = jobs.job_id
-        WHERE jobs.company_id = ?
-    """, (company_id,))
+    SELECT 
+        applications.application_id,
+        students.student_name,
+        applications.job_id,
+        applications.application_date,
+        applications.program,
+        applications.cgpa,
+        applications.status
+    FROM applications
+    JOIN jobs ON applications.job_id = jobs.job_id
+    JOIN students ON applications.student_id = students.student_id
+    WHERE jobs.company_id = ?
+""", (company_id,))
 
     applications = cursor.fetchall()
     conn.close()
@@ -606,7 +734,7 @@ def update_application_status(application_id):
     return redirect("/company/applications")
 
 
-# ---------------- STUDENT APPLICATION STATUS ----------------
+# APPLICATION Status
 @app.route("/apply/status")
 def apply_status():
     if "student_id" not in session:
@@ -617,13 +745,40 @@ def apply_status():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM applications WHERE student_id=?", (student_id,))
+    cursor.execute("""
+    SELECT 
+    a.application_id,
+    j.job_role,
+    j.salary,
+    j.location,
+    c.company_name,
+    a.application_date,
+    a.status
+    FROM applications a
+    JOIN jobs j ON a.job_id = j.job_id
+    JOIN company c ON j.company_id = c.company_id
+    WHERE a.student_id = ?
+    """, (session['student_id'],))
     applications = cursor.fetchall()
 
     conn.close()
 
     return render_template("jobstatus.html", applications=applications)
 
+@app.route("/admin/student/delete/<student_id>")
+def delete_student(student_id):
+    if "admin" not in session:
+        return redirect("/admin/login")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM students WHERE student_id=?", (student_id,))
+    
+    conn.commit()
+    conn.close()
+
+    return redirect("/admin/dashboard")
 
 if __name__ == "__main__":
     init_db()
